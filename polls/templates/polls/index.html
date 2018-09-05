@@ -1,9 +1,59 @@
-{% if latest_question_list %}
-    <ul>
-    {% for question in latest_question_list %}
-        <li><a href="{% url 'polls:detail' question.id %}">{{ question.question_text }}</a></li>
-    {% endfor %}
-    </ul>
-{% else %}
-    <p>No polls are available.</p>
-{% endif %}
+<html>
+  <head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  </head>
+  <body>
+    <div id="questions">
+      <p>No polls are available.</p>
+    </div>
+     <div>
+      <h1 id="question_text"></h1>
+      <form id="question_form" action="#">
+        {% csrf_token %}
+      </form>
+    </div>
+    <script>
+    $(document).ready(function() {
+      $.get("/polls/api/questions").success(function (data) {
+        var question_list = "<ul>";
+        for (question in data) {
+          question_list += "<li><a href='#' onclick='loadQuestion("+data[question]["id"]+")'>"+data[question]["question_text"]+"</a></li>";
+        }
+        if (question_list !== "<ul>") {
+          $("#questions").html(question_list + "</ul>");
+        }
+      });
+    });
+
+    var sendVote = function(question_id) {
+      var form_data = $("#question_form").serialize();
+      $.post('/polls/'+question_id+'/vote/', form_data).success(function() {
+        alert("success!");
+      });
+    }
+
+    var loadQuestion = function (question_id) {
+      $.get("/polls/api/questions/"+question_id).success(function (data) {
+        $("#question_text").html(data["question_text"]);
+        var form = "";
+        for (choice in data["choices"]) {
+          form += "<input type='radio' name='choice' id='choice"+choice+"' value='"+data["choices"][choice]["id"]+"' />";
+          form += "<label for='choice"+choice+"'>"+data["choices"][choice]["choice_text"]+"</label><br />";
+        }
+        $("#question_form").append(form + "<input type='button' onclick='sendVote("+question_id+")' value='Vote' />");
+      });
+    }
+    </script>
+  </body>
+</html>
+
+
+{#{% if latest_question_list %}#}
+{#    <ul>#}
+{#    {% for question in latest_question_list %}#}
+{#        <li><a href="{% url 'polls:detail' question.id %}">{{ question.question_text }}</a></li>#}
+{#    {% endfor %}#}
+{#    </ul>#}
+{#{% else %}#}
+{#    <p>No polls are available.</p>#}
+{#{% endif %}#}
